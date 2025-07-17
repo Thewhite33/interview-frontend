@@ -25,7 +25,7 @@ export default function Page() {
 
         const saveAcceptedSlot = async () => {
             try {
-                const res = await fetch('http://localhost:3000/accept-slot', {
+                const res = await fetch('https://interview-backend-9qx6.onrender.com/accept-slot', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: emailParam, slot: slotParam, date: dateParam }),

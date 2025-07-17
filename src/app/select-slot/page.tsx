@@ -48,7 +48,7 @@ export default function SelectSlotPage() {
       const formattedDate = format(selectedDate, 'PP'); // eg: Jul 17, 2025
       const formattedTime = format(combinedDate, 'p'); // eg: 8:00 PM
 
-      const res = await fetch('http://localhost:3000/custom-slot', {
+      const res = await fetch('https://interview-backend-9qx6.onrender.com/custom-slot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, date: formattedDate, slot: formattedTime }),

@@ -78,7 +78,7 @@ export default function ScheduleInterviewDialog() {
 
       const formattedDate = format(formData.date, 'yyyy-MM-dd');
 
-      const res = await axios.post('http://localhost:3000/send-email', {
+      const res = await axios.post('https://interview-backend-9qx6.onrender.com/send-email', {
         candidateName: formData.name,
         candidateEmail: formData.email,
         slots: formattedSlots,
