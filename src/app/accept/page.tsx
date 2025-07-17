@@ -1,18 +1,24 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 
-export default function AcceptSlot() {
-    const searchParams = useSearchParams();
-    const email = searchParams.get('email');
-    const slot = searchParams.get('slot');
-    const date = searchParams.get('date');
-
+export default function Page() {
+    const [email, setEmail] = useState<string | null>(null);
+    const [slot, setSlot] = useState<string | null>(null);
+    const [date, setDate] = useState<string | null>(null);
     const [status, setStatus] = useState('Saving your response...');
 
     useEffect(() => {
-        if (!email || !slot || !date) {
+        const params = new URLSearchParams(window.location.search);
+        const emailParam = params.get('email');
+        const slotParam = params.get('slot');
+        const dateParam = params.get('date');
+
+        setEmail(emailParam);
+        setSlot(slotParam);
+        setDate(dateParam);
+
+        if (!emailParam || !slotParam || !dateParam) {
             setStatus('Missing required information.');
             return;
         }
@@ -22,7 +28,7 @@ export default function AcceptSlot() {
                 const res = await fetch('http://localhost:3000/accept-slot', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, slot, date }), // ✅ include date in request body
+                    body: JSON.stringify({ email: emailParam, slot: slotParam, date: dateParam }),
                 });
 
                 if (res.ok) {
@@ -37,7 +43,7 @@ export default function AcceptSlot() {
         };
 
         saveAcceptedSlot();
-    }, [email, slot, date]);
+    }, []);
 
     return (
         <div className="max-w-xl mx-auto mt-20 text-center p-4">
