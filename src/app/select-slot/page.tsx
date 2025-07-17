@@ -2,75 +2,122 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format,parseISO } from 'date-fns';
 
 export default function SelectSlotPage() {
-    const searchParams = useSearchParams();
-    const email = searchParams.get('email');
+  const searchParams = useSearchParams();
+  const email = searchParams.get('email');
 
-    const [customSlot, setCustomSlot] = useState('');
-    const [message, setMessage] = useState('');
-    const [loading, setLoading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedTime, setSelectedTime] = useState<string>('');
+  const [loading, setLoading] = useState(false);
 
-    interface SubmitResponse {
-        message?: string;
+  interface SubmitResponse {
+    message?: string;
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+  e.preventDefault();
+  if (!email || !selectedDate || !selectedTime) {
+    toast.error('Please select a date and time.');
+    return;
+  }
+
+  const [hours, minutes] = selectedTime.split(':').map(Number);
+  const combinedDate = new Date(selectedDate);
+  combinedDate.setHours(hours);
+  combinedDate.setMinutes(minutes);
+  combinedDate.setSeconds(0);
+
+  const now = new Date();
+  if (combinedDate < now) {
+    toast.error('Cannot select past date/time.');
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const formattedDate = format(selectedDate, 'PP'); // eg: Jul 17, 2025
+    const formattedTime = format(combinedDate, 'p'); // eg: 8:00 PM
+
+    const res = await fetch('http://localhost:3000/custom-slot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, date: formattedDate, slot: formattedTime }),
+    });
+
+    const data: SubmitResponse = await res.json();
+    if (res.ok) {
+      toast.success('Your preferred time slot has been saved!');
+      setSelectedDate(undefined);
+      setSelectedTime('');
+    } else {
+      toast.error(`${data.message || 'Error occurred'}`);
     }
+  } catch (error) {
+    console.error(error);
+    toast.error('Failed to connect to the server.');
+  }
+  setLoading(false);
+};
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
-        e.preventDefault();
-        if (!email || !customSlot) {
-            setMessage('❌ Please enter a valid date/time.');
-            return;
-        }
 
-        setLoading(true);
-        try {
-            const res = await fetch('http://localhost:3000/custom-slot', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, customSlot }),
-            });
+  return (
+    <div className="max-w-md mx-auto mt-20 p-6 border rounded-xl shadow-xl text-center">
+      <h1 className="text-2xl font-semibold mb-6">Pick Your Preferred Interview Time</h1>
 
-            const data: SubmitResponse = await res.json();
-            if (res.ok) {
-                setMessage('✅ Your preferred time slot has been saved!');
-                setCustomSlot('');
-            } else {
-                setMessage(`❌ ${data.message || 'Error occurred'}`);
-            }
-        } catch (error) {
-            console.error(error);
-            setMessage('❌ Failed to connect to the server.');
-        }
-        setLoading(false);
-    };
+      {email ? (
+        <>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Date Picker */}
+            <div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full">
+                    {selectedDate ? format(selectedDate, 'PP') : 'Select date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    disabled={(date) =>
+                      date < new Date(new Date().setHours(0, 0, 0, 0)) // disables dates before today
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
 
-    return (
-        <div className="max-w-md mx-auto mt-20 p-4 border rounded-xl shadow-xl text-center">
-            <h1 className="text-2xl font-semibold mb-4">Pick Your Preferred Interview Time</h1>
+            {/* Time Picker */}
+            <div>
+              <input
+                type="time"
+                value={selectedTime}
+                onChange={(e) => setSelectedTime(e.target.value)}
+                className="w-full px-4 py-2 border rounded-md"
+                required
+              />
+            </div>
 
-            {email ? (
-                <>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <input
-                            type="datetime-local"
-                            value={customSlot}
-                            onChange={(e) => setCustomSlot(e.target.value)}
-                            className="w-full px-4 py-2 border rounded-md"
-                            required
-                        />
-                        <button
-                            type="submit"
-                            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition"
-                            disabled={loading}
-                        >
-                            {loading ? 'Saving...' : 'Submit'}
-                        </button>
-                    </form>
-                    {message && <p className="mt-4 text-sm">{message}</p>}
-                </>
-            ) : (
-                <p className="text-red-500">Email not found in the URL. Please use the valid email link.</p>
-            )}
-        </div>
-    );
+            <Button
+              type="submit"
+              disabled={loading || !selectedDate || !selectedTime}
+              className="w-full"
+            >
+              {loading ? 'Saving...' : 'Submit'}
+            </Button>
+          </form>
+        </>
+      ) : (
+        <p className="text-red-500">Email not found in the URL. Please use the valid email link.</p>
+      )}
+    </div>
+  );
 }
