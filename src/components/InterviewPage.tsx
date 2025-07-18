@@ -20,7 +20,7 @@ export default function InterviewsPage() {
     useEffect(() => {
         const fetchInterviews = async () => {
             try {
-                const res = await fetch('https://interview-backend-9qx6.onrender.com/all-interviews');
+                const res = await fetch(`${process.env.NEXT_PUBLIC_URL}/all-interviews`);
                 const data = await res.json();
                 setInterviews(data);
             } catch (err) {
